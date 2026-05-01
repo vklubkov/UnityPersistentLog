@@ -1,0 +1,19 @@
+{
+  "name": "com.vklubkov.persistentlog",
+  "version": "1.0.0",
+  "displayName": "Persistent Log",
+  "description": "Unity log interceptor with automated log file and editor log window that survives domain reload.",
+  "unity": "6000.3",
+  "license": "MIT",
+  "licensesUrl": "https://github.com/vklubkov/UnityPersistentLog?tab=MIT-1-ov-file",
+  "changelogUrl": "https://github.com/vklubkov/UnityPersistentLog/releases",
+  "documentationUrl": "https://github.com/vklubkov/UnityPersistentLog",
+  "author": {
+    "name": "Vladimir Klubkov",
+    "url": "https://github.com/vklubkov",
+    "email": "vladimir.gamedev@gmail.com"
+  },
+  "dependencies": {
+    "com.unity.nuget.newtonsoft-json": "3.2.2"
+  }
+}
