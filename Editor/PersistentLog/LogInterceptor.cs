@@ -170,6 +170,8 @@ namespace PersistentLog {
             packageState.IsRunning = true;
             SavePersistentState();
 
+            Subscribe();
+
             if (packageState.Precache != null) {
                 foreach (var logItem in packageState.Precache)
                     OnLogMessageReceived(packageState, logItem);
