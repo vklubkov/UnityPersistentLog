@@ -198,7 +198,7 @@ namespace PersistentLog {
                 foreach (var packageState in _persistentState.Packages.Values) {
                     if (packageState.Precache != null)
                         packageState.Precache.Add(logItem);
-                    else
+                    else if (packageState.IsRunning)
                         OnLogMessageReceived(packageState, logItem);
                 }
             } catch (Exception) {
