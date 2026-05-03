@@ -3,7 +3,7 @@ using UnityEngine.UIElements;
 
 namespace PersistentLog {
     // ReSharper disable once InconsistentNaming
-    public static class INotifyValueChangedExtensions {
+    internal static class INotifyValueChangedExtensions {
         [NotNull] public static T WithValue<T, TValue>([NotNull] this T element, TValue value)
                 where T : INotifyValueChanged<TValue> {
             element.value = value;

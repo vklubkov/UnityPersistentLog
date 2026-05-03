@@ -2,7 +2,7 @@
 using UnityEngine.UIElements;
 
 namespace PersistentLog {
-    public static class TextInputBaseFieldExtensions {
+    internal static class TextInputBaseFieldExtensions {
         [NotNull] public static T WithReadOnly<T, TValueType>([NotNull] this T element, bool value = true)
                 where T : TextInputBaseField<TValueType> {
             element.isReadOnly = value;

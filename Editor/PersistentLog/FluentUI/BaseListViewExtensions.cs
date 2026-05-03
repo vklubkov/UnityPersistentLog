@@ -3,7 +3,7 @@ using JetBrains.Annotations;
 using UnityEngine.UIElements;
 
 namespace PersistentLog {
-    public static class BaseListViewExtensions {
+    internal static class BaseListViewExtensions {
         [NotNull] public static T WithMakeNoneElement<T>(
             [NotNull] this T element,
             [CanBeNull] Func<VisualElement> makeNoneElement)

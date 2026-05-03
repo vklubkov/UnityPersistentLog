@@ -2,7 +2,7 @@
 using UnityEngine.UIElements;
 
 namespace PersistentLog {
-    public static class TextElementExtensions {
+    internal static class TextElementExtensions {
         [NotNull] public static T WithText<T>([NotNull] this T element, [CanBeNull] string text)
                 where T : TextElement {
             element.text = text;

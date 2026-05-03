@@ -2,7 +2,7 @@
 using UnityEngine.UIElements;
 
 namespace PersistentLog {
-    public static class TextFieldExtensions {
+    internal static class TextFieldExtensions {
         [NotNull] public static T AsMultiline<T>([NotNull] this T element, bool value = true)
                 where T : TextField {
             element.multiline = value;

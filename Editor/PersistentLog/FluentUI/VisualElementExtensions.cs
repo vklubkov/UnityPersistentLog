@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace PersistentLog {
-    public static class VisualElementExtensions {
+    internal static class VisualElementExtensions {
         [NotNull] public static T AddTo<T, TParent>([NotNull] this T element, [NotNull] TParent parent)
                 where T : VisualElement
                 where TParent : VisualElement {

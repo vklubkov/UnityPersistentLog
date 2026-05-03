@@ -5,7 +5,7 @@ using UnityEditor.UIElements;
 using UnityEngine.UIElements;
 
 namespace PersistentLog {
-    public static class UIExtensions {
+    internal static class UIExtensions {
         [NotNull] public static VisualElement VisualElement() => new();
         [NotNull] public static Label Label() => new();
         [NotNull] public static Image Image() => new();

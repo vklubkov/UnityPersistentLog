@@ -3,7 +3,7 @@ using JetBrains.Annotations;
 using UnityEngine.UIElements;
 
 namespace PersistentLog {
-    public static class ListViewExtensions {
+    internal static class ListViewExtensions {
         [NotNull] public static T WithMakeItem<T>(
             [NotNull] this T element,
             [CanBeNull] Func<VisualElement> makeItem)

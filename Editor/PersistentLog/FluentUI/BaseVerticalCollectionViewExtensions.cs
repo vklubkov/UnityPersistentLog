@@ -2,7 +2,7 @@
 using UnityEngine.UIElements;
 
 namespace PersistentLog {
-    public static class BaseVerticalCollectionViewExtensions {
+    internal static class BaseVerticalCollectionViewExtensions {
         [NotNull] public static T WithClearSelection<T>([NotNull] this T element)
                 where T : BaseVerticalCollectionView {
             element.ClearSelection();

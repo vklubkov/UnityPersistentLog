@@ -2,7 +2,7 @@
 using UnityEngine.UIElements;
 
 namespace PersistentLog {
-    public static class CallbackEventHandlerExtensions {
+    internal static class CallbackEventHandlerExtensions {
         [NotNull] public static T WithCallback<T, TEventType>(
             [NotNull] this T element,
             [NotNull] EventCallback<TEventType> callback)

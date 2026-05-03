@@ -2,7 +2,7 @@
 using static System.String;
 
 namespace PersistentLog {
-    public static class PathExtensions {
+    internal static class PathExtensions {
         public static string GetParent(this string path) {
             try {
                 return Path.GetDirectoryName(path)?.Replace('\\', '/');
