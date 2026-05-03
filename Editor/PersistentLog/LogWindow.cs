@@ -84,7 +84,7 @@ namespace PersistentLog {
             }
 
             if (window == null)
-                window = GetWindow<LogWindow>($"{packageName} Log");
+                window = CreateWindow<LogWindow>($"{packageName} Log");
 
             window._packageName = packageName;
 
