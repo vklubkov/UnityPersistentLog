@@ -2,7 +2,7 @@
   "name": "com.vklubkov.persistentlog",
   "version": "1.0.0",
   "displayName": "Persistent Log",
-  "description": "Unity log interceptor with automated log file and editor log window that survives domain reload.",
+  "description": "Persistent Log is an optional logging utility for Unity Editor packages, providing robust, persistent logging that survives domain reloads. It is designed to be used programmatically, rather than as a standalone tool with its own entry points.\n\nPersistent Log intercepts Unity console logs and redirects them to a dedicated, interactive Editor window and/or a log file. This window maintains its state and content during assembly reloads, making it ideal for debugging complex Editor processes like package installations or builds.\n\nUnlike the Unity Console, Persistent Log provides a dedicated log window and log file for each package using it.\n\n<i>Note: if you simply want log messages to persist across domain reloads, you don't need this tool, there's a setting for this in the Unity Console: \"Clear on Recompile\" in the \"Clear\" dropdown.</i>",
   "unity": "6000.3",
   "license": "MIT",
   "licensesUrl": "https://github.com/vklubkov/UnityPersistentLog?tab=MIT-1-ov-file",
@@ -15,5 +15,13 @@
   },
   "dependencies": {
     "com.unity.nuget.newtonsoft-json": "3.2.2"
-  }
+  },
+  "samples": [
+    {
+      "displayName": "API Usage",
+      "description": "This is the API usage example that installs into the Assets folder. Refer to the README.md for the recommended way of using Persistent Log from within packages.",
+      "interactiveImport": true,
+      "path": "Samples~/ApiSample"
+    }
+  ]
 }
