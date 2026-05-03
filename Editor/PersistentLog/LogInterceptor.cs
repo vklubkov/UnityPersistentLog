@@ -67,7 +67,7 @@ namespace PersistentLog {
         static void OnBeforeAssemblyReload() => OnDestroy();
 #endif
 
-        static bool IsRunningPackages =>
+        static bool HasRunningPackages =>
             _persistentState?.Packages.Values.Any(packageState => packageState.IsRunning) ?? false;
 
         static bool IsProcessingPackages =>
@@ -79,7 +79,7 @@ namespace PersistentLog {
             var json = GetString(_stateKey, defaultJson);
             _persistentState = DeserializeObject<PersistentState>(json, new StringEnumConverter()) ?? new();
 
-            Subscribe(condition: IsRunningPackages);
+            Subscribe(condition: HasRunningPackages);
 
             foreach (var (packageName, packageState) in _persistentState.Packages) {
                 if (packageState.IsWindowOpen)
