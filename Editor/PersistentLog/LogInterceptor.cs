@@ -178,7 +178,7 @@ namespace PersistentLog {
             }
         }
 
-        public static void Cleanup(string packageName) {
+        public static void Stop(string packageName) {
             _persistentState?.Packages.Remove(packageName);
             SavePersistentState();
             Unsubscribe(condition: !IsProcessingPackages);
