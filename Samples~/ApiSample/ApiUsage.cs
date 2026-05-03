@@ -85,6 +85,7 @@ namespace Samples.Persistent_Log._1._0._0.API_Usage {
             }
         }
 
+#region Menu
 
         // Window
 
@@ -252,5 +253,7 @@ namespace Samples.Persistent_Log._1._0._0.API_Usage {
             if (PrepareOperation(fail: false))
                 RunOperation(fail: true, DomainReloadTrigger.RequestScriptReload);
         }
+
+#endregion
     }
 }
