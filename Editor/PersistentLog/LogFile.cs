@@ -18,8 +18,10 @@ namespace PersistentLog {
             if (parent != "" && !Directory.Exists(parent) && !parent.CreatePath())
                 return;
 
-            Copy(currentPath, previousPath, overwrite: true);
-            Delete(currentPath);
+            if (Exists(currentPath)) {
+                Copy(currentPath, previousPath, overwrite: true);
+                Delete(currentPath);
+            }
         }
 
         public static string LoadLastLog(string currentPath, string previousPath, List<LogItemInfo> allLogs) {
