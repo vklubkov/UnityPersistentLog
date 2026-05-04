@@ -7,7 +7,6 @@ using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
-using UnityEngine.UIElements.Experimental;
 using static System.String;
 using static System.StringComparison;
 using static PersistentLog.LogSerializer;
@@ -153,32 +152,32 @@ namespace PersistentLog {
 
             static void CreateFilterBar(VisualElement parent, LogWindow window)
                 => UIExtensions.Toolbar()
-                    .WithChild(data: window, static window
+                    .WithAdd(data: window, static window
                         => UIExtensions.ToolbarSearchField()
                             .WithValue(window._filterText)
                             .WithFlexGrow(1)
-                            .WithValueChangedCallback(data: window,
+                            .WithOnValueChanged(data: window,
                                 static (ChangeEvent<string> evt, LogWindow window) => {
                                     window._filterText = evt.newValue;
                                     window.RefreshFilteredList(shouldScrollToLastItem: false);
                                 }))
-                    .WithChild(data: window, static window
+                    .WithAdd(data: window, static window
                         => CreateFilterToggle(LogType.Log, window._showInfo, out window._infoCountLabel)
-                            .WithValueChangedCallback(data: window,
+                            .WithOnValueChanged(data: window,
                                 static (ChangeEvent<bool> evt, LogWindow window) => {
                                     window._showInfo = evt.newValue;
                                     window.RefreshFilteredList(shouldScrollToLastItem: false);
                                 }))
-                    .WithChild(data: window, static window
+                    .WithAdd(data: window, static window
                         => CreateFilterToggle(LogType.Warning, window._showWarnings, out window._warningCountLabel)
-                            .WithValueChangedCallback(data: window,
+                            .WithOnValueChanged(data: window,
                                 static (ChangeEvent<bool> evt, LogWindow window) => {
                                     window._showWarnings = evt.newValue;
                                     window.RefreshFilteredList(shouldScrollToLastItem: false);
                                 }))
-                    .WithChild(data: window, static window
+                    .WithAdd(data: window, static window
                         => CreateFilterToggle(LogType.Error, window._showErrors, out window._errorCountLabel)
-                            .WithValueChangedCallback(data: window,
+                            .WithOnValueChanged(data: window,
                                 static (ChangeEvent<bool> evt, LogWindow window) => {
                                     window._showErrors = evt.newValue;
                                     window.RefreshFilteredList(shouldScrollToLastItem: false);
@@ -189,11 +188,11 @@ namespace PersistentLog {
                 => UIExtensions.ToolbarToggle()
                     .WithValue(initialState)
                     .WithPaddingLeftRight(4)
-                    .WithChild(data: type, static type
+                    .WithAdd(data: type, static type
                         => UIExtensions.Image()
                             .WithImage(GetIcon(type))
                             .WithSize(16))
-                    .WithChild(out countLabel, static ()
+                    .WithAdd(out countLabel, static ()
                         => UIExtensions.Label()
                             .WithValue("0")
                             .WithMarginLeft(2)
@@ -203,13 +202,13 @@ namespace PersistentLog {
                 => UIExtensions.TwoPaneSplitView(0, 100, Vertical)
                     .WithFlexGrow(1)
                     .WithViewDataKey("LogWindow_SplitView")
-                    .WithChild(data: window, static (splitView, window) => CreateListView(splitView, window))
-                    .WithChild(data: window,
+                    .WithAdd(data: window, static (splitView, window) => CreateListView(splitView, window))
+                    .WithAdd(data: window,
                         static (splitView, window) => CreateStackTraceScrollView(splitView, window))
                     .AddTo(parent);
 
-            static ListView CreateListView(VisualElement parent, LogWindow window) {
-                var listView = UIExtensions.ListView(window._filteredLogs, -1, MakeItem, window.BindItem)
+            static ListView CreateListView(VisualElement parent, LogWindow window)
+                => window._listView = UIExtensions.ListView(window._filteredLogs, -1, MakeItem, window.BindItem)
                     .WithVirtualizationMethod(DynamicHeight)
                     .WithFlexGrow(1)
                     .WithSelectionType(SelectionType.Multiple)
@@ -227,47 +226,42 @@ namespace PersistentLog {
                             evt.menu.AppendAction("Copy Compact", _
                                 => systemCopyBuffer = SerializeMessages(selectedItems));
                         }))
+                    .WithSelf(data: window, static (listView, window)
+                        => listView.WhenSelectionChanged(objects => {
+                            var selectedLogItems = objects.Cast<LogItemInfo>().ToList();
+                            if (selectedLogItems.Count == 0)
+                                return;
+
+                            var firstSelectedLogItem = selectedLogItems[0];
+                            if (firstSelectedLogItem == null) {
+                                listView.WithClearSelection();
+                                return;
+                            }
+
+                            var message = HighlightLine(firstSelectedLogItem.Message);
+                            var stackTrace = FormatStackTrace(firstSelectedLogItem.StackTrace);
+                            stackTrace = Join('\n', message, stackTrace);
+                            window._stackTraceField.value = stackTrace;
+                            window._stackTraceValue = stackTrace;
+                        }))
+                    .WithSelf(static listView
+                        => listView.WhenItemsChosen(objects => {
+                            if (objects.FirstOrDefault() is LogItemInfo logItem)
+                                OpenCodeForItem(logItem);
+                        }))
                     .AddTo(parent);
-
-                listView.selectionChanged += objects => {
-                    var selectedItems = objects.Cast<LogItemInfo>().ToList();
-                    if (selectedItems.Count == 0)
-                        return;
-
-                    var firstSelected = selectedItems[0];
-                    if (firstSelected == null) {
-                        listView.WithClearSelection();
-                        return;
-                    }
-
-                    var message = HighlightLine(firstSelected.Message);
-                    var stackTrace = FormatStackTrace(firstSelected.StackTrace);
-                    stackTrace = Join('\n', message, stackTrace);
-
-                    window._stackTraceField.value = stackTrace;
-                    window._stackTraceValue = stackTrace;
-                };
-
-                listView.itemsChosen += objects => {
-                    if (objects.FirstOrDefault() is LogItemInfo item)
-                        OpenCodeForItem(item);
-                };
-
-                window._listView = listView;
-                return listView;
-            }
 
             static VisualElement MakeItem()
                 => UIExtensions.VisualElement()
                     .WithFlexDirection(Row)
                     .WithAlignItems(Align.FlexStart)
                     .WithMinHeight(24)
-                    .WithChild(static ()
+                    .WithAdd(static ()
                         => UIExtensions.Image()
                             .WithSize(16)
                             .WithFlexShrink(0)
                             .WithMargin(leftRight: 4, topBottom: 0))
-                    .WithChild(static ()
+                    .WithAdd(static ()
                         => UIExtensions.Label()
                             .WithFlexGrow(1)
                             .WithTextAlign(MiddleLeft)
@@ -277,7 +271,7 @@ namespace PersistentLog {
                 => UIExtensions.ScrollView()
                     .WithFlexGrow(1)
                     .WithBorderTopWidth(1)
-                    .WithChild(window, static window
+                    .WithAdd(window, static window
                         => window._stackTraceField = UIExtensions.TextField()
                             .AsMultiline()
                             .AsReadOnly()
@@ -286,54 +280,53 @@ namespace PersistentLog {
                             .WithPadding(4)
                             .WithBackgroundColor(clear)
                             .WithBorderWidth(0)
-                            .WithCallback(static (AttachToPanelEvent _, TextField stackTraceField)
-                                => stackTraceField.WithQ("unity-text-input", static textInput => textInput?
+                            .WithOnAttachToPanel(static (_, stackTraceField) => {
+                                stackTraceField.WithOnTextInput(static textInput => textInput?
                                     .WithBackgroundColor(clear)
                                     .WithBorderWidth(0)
-                                    .WithWhiteSpace(Normal)))
-                            .WithQ(static (TextField stackTraceField, TextElement textElement) => textElement
-                                .WithRichText()
-                                .WithCallback(data: stackTraceField, static (FocusEvent _, TextField stackTraceField)
-                                    => stackTraceField.WithClearSelection())
-                                .WithCallback(static (PointerUpLinkTagEvent evt) => {
-                                    var link = evt.linkID;
-                                    if (IsNullOrEmpty(link))
-                                        return;
+                                    .WithWhiteSpace(Normal));
+                            })
+                            .WithOnTextElement(static (stackTraceField, textElement)
+                                => textElement
+                                    .WithRichText()
+                                    .WithOnFocus(data: stackTraceField, static (_, stackTraceField)
+                                        => stackTraceField.WithClearSelection())
+                                    .WithOnPointerUpLinkTag(static evt => {
+                                        var link = evt.linkID;
+                                        if (IsNullOrEmpty(link))
+                                            return;
 
-                                    var parts = link.Split(':');
-                                    if (parts.Length != 2)
-                                        return;
+                                        var parts = link.Split(':');
+                                        if (parts.Length != 2)
+                                            return;
 
-                                    var path = parts[0];
-                                    var lineNumber = int.Parse(parts[1]);
-                                    OpenCodeForLine(path, lineNumber);
-                                }))
+                                        var path = parts[0];
+                                        var lineNumber = int.Parse(parts[1]);
+                                        OpenCodeForLine(path, lineNumber);
+                                    }))
                             .WithValue(window._stackTraceValue))
                     .AddTo(parent);
 
             static void CreateBottomBar(VisualElement parent, LogWindow window)
                 => UIExtensions.VisualElement()
                     .WithFlexDirection(Row)
-                    .WithChild(data: window, static window
+                    .WithAdd(data: window, static window
                         => UIExtensions.VisualElement()
                             .WithFlexDirection(Row)
                             .WithFlexGrow(1)
-                            .WithChild(data: window, static window
+                            .WithAdd(data: window, static window
                                 => window._openFolderButton = UIExtensions.Button(window.OpenFolder)
                                     .WithText("Open Folder")
                                     .AsEnabled(!IsNullOrEmpty(window._currentPath))))
-                    .WithChild(data: window, static window
+                    .WithAdd(data: window, static window
                         => UIExtensions.VisualElement()
                             .WithFlexDirection(Row)
-                            .WithChild(data: window, static window
-                                => UIExtensions.Button(window.Clear)
-                                    .WithText("Clear"))
-                            .WithChild(data: window, static window
-                                => UIExtensions.Button(window.Load)
-                                    .WithText("Load"))
-                            .WithChild(data: window, static window
-                                => UIExtensions.Button(window.Save)
-                                    .WithText("Save")))
+                            .WithAdd(data: window, static window
+                                => UIExtensions.Button(window.Clear).WithText("Clear"))
+                            .WithAdd(data: window, static window
+                                => UIExtensions.Button(window.Load).WithText("Load"))
+                            .WithAdd(data: window, static window
+                                => UIExtensions.Button(window.Save).WithText("Save")))
                     .AddTo(parent);
         }
 
@@ -341,9 +334,9 @@ namespace PersistentLog {
 
         static void BindItem(VisualElement element, LogItemInfo logItem)
             => element
-                .WithQ(data: logItem, static (VisualElement _, Label label, LogItemInfo logItem)
+                .WithQ(data: logItem, static (Label label, LogItemInfo logItem)
                     => label.WithText($"[{logItem.Timestamp:HH:mm:ss}] {logItem.Message}"))
-                .WithQ(data: logItem, static (VisualElement _, Image icon, LogItemInfo logItem)
+                .WithQ(data: logItem, static (Image icon, LogItemInfo logItem)
                     => icon.WithImage(GetIcon(logItem.Type)));
 
         static Texture GetIcon(LogType type) => type switch {
@@ -441,9 +434,9 @@ namespace PersistentLog {
 
             _listView?
                 .WithRebuild()
-                .WithCondition(condition: shouldScrollToLastItem, static listView => listView
+                .WithCondition(condition: shouldScrollToLastItem, onTrue: static listView => listView
                     .WithScrollToLastItem()
-                    .WithCallbackOnce(static (GeometryChangedEvent evt) => {
+                    .WithOnGeometryChangedOnce(static evt => {
                         if (evt.target is ListView listView)
                             listView.WithScrollToLastItem();
                     }));
