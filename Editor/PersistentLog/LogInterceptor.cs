@@ -13,6 +13,7 @@ using static Newtonsoft.Json.MemberSerialization;
 using static UnityEditor.SessionState;
 using static UnityEngine.Application;
 using static UnityEngine.Awaitable;
+using static UnityEngine.Debug;
 
 #if UNITY_6000_5_OR_NEWER
 using Unity.Scripting.LifecycleManagement;
@@ -90,48 +91,61 @@ namespace PersistentLog {
         static void OnDestroy() => Unsubscribe();
 
         public static void ShowWindow(string packageName, string logFilePath) {
-            if (IsNullOrEmpty(packageName))
-                return;
-
-            if (_persistentState == null)
-                return;
-
-            if (_persistentState.Packages.TryGetValue(packageName, out var packageState)) {
-                if (packageState.IsWindowOpen && packageState.Window != null)
+            try {
+                if (IsNullOrEmpty(packageName))
                     return;
+
+                if (_persistentState == null)
+                    return;
+
+                if (_persistentState.Packages.TryGetValue(packageName, out var packageState)) {
+                    if (packageState.IsWindowOpen && packageState.Window != null)
+                        return;
+                }
+                else {
+                    packageState = new PackageState();
+                    _persistentState.Packages.Add(packageName, packageState);
+                }
+
+                packageState.Window = GetWindow(packageName, packageState);
+                packageState.IsWindowOpen = true;
+
+                (packageState.LogFilePath, packageState.PreviousLogFilePath, packageState.Extension) =
+                    GetLogFilePaths(packageName, logFilePath);
+
+                SavePersistentState();
+
+                packageState.Window.LoadLastLogIfNeeded(packageState.LogFilePath, packageState.PreviousLogFilePath);
+            } catch (Exception e) {
+                LogException(e);
             }
-            else {
-                packageState = new PackageState();
-                _persistentState.Packages.Add(packageName, packageState);
-            }
-
-            packageState.Window = GetWindow(packageName, packageState);
-            packageState.IsWindowOpen = true;
-
-            (packageState.LogFilePath, packageState.PreviousLogFilePath, packageState.Extension) =
-                GetLogFilePaths(packageName, logFilePath);
-
-            SavePersistentState();
-
-            packageState.Window.LoadLastLogIfNeeded(packageState.LogFilePath, packageState.PreviousLogFilePath);
         }
 
         public static void Awake(string packageName) {
-            if (IsNullOrEmpty(packageName))
-                return;
+            try {
+                if (IsNullOrEmpty(packageName))
+                    return;
 
-            if (_persistentState == null)
-                return;
+                if (_persistentState == null)
+                    return;
 
-            if (!_persistentState.Packages.TryGetValue(packageName, out var packageState)) {
-                packageState = new PackageState();
-                _persistentState.Packages.Add(packageName, packageState);
-                SavePersistentState();
+                if (!_persistentState.Packages.TryGetValue(packageName, out var packageState)) {
+                    packageState = new PackageState();
+                    _persistentState.Packages.Add(packageName, packageState);
+                    SavePersistentState();
+                }
+
+                packageState.Precache = new List<LogItemInfo>();
+
+                Subscribe();
+            } catch (Exception e) {
+                LogException(e);
+
+                LogError(
+                    "Persistent Log: LogInterceptor failed to awake. There are " +
+                    "no guarantees that it functions properly after this message. " +
+                    "If you encounter any related issues please restart Unity.");
             }
-
-            packageState.Precache = new List<LogItemInfo>();
-
-            Subscribe();
         }
 
         public static void Start(
@@ -139,51 +153,70 @@ namespace PersistentLog {
             string logFilePath,
             bool enableAutomatedLogFile = true,
             bool automaticallyOpenLogWindow = true) {
-            if (IsNullOrEmpty(packageName))
-                return;
+            try {
+                if (IsNullOrEmpty(packageName))
+                    return;
 
-            if (_persistentState == null)
-                return;
+                if (_persistentState == null)
+                    return;
 
-            if (!_persistentState.Packages.TryGetValue(packageName, out var packageState)) {
-                packageState = new PackageState();
-                _persistentState.Packages.Add(packageName, packageState);
+                if (!_persistentState.Packages.TryGetValue(packageName, out var packageState)) {
+                    packageState = new PackageState();
+                    _persistentState.Packages.Add(packageName, packageState);
+                }
+
+                packageState.EnableAutomatedLogFile = enableAutomatedLogFile;
+
+                if (enableAutomatedLogFile) {
+                    (packageState.LogFilePath, packageState.PreviousLogFilePath, packageState.Extension) =
+                        GetLogFilePaths(packageName, logFilePath);
+
+                    LogFile.New(packageState.LogFilePath, packageState.PreviousLogFilePath);
+                }
+
+                if (packageState.Window == null && automaticallyOpenLogWindow) {
+                    packageState.Window = GetWindow(packageName, packageState);
+                    packageState.IsWindowOpen = true;
+                }
+
+                if (packageState.Window != null)
+                    packageState.Window.Clear();
+
+                packageState.IsRunning = true;
+                SavePersistentState();
+
+                Subscribe();
+
+                if (packageState.Precache != null) {
+                    foreach (var logItem in packageState.Precache)
+                        OnLogMessageReceived(packageState, logItem);
+
+                    packageState.Precache = null;
+                }
             }
+            catch (Exception e) {
+                LogException(e);
 
-            packageState.EnableAutomatedLogFile = enableAutomatedLogFile;
-
-            if (enableAutomatedLogFile) {
-                (packageState.LogFilePath, packageState.PreviousLogFilePath, packageState.Extension) =
-                    GetLogFilePaths(packageName, logFilePath);
-
-                LogFile.New(packageState.LogFilePath, packageState.PreviousLogFilePath);
-            }
-
-            if (packageState.Window == null && automaticallyOpenLogWindow) {
-                packageState.Window = GetWindow(packageName, packageState);
-                packageState.IsWindowOpen = true;
-            }
-
-            if (packageState.Window != null)
-                packageState.Window.Clear();
-
-            packageState.IsRunning = true;
-            SavePersistentState();
-
-            Subscribe();
-
-            if (packageState.Precache != null) {
-                foreach (var logItem in packageState.Precache)
-                    OnLogMessageReceived(packageState, logItem);
-
-                packageState.Precache = null;
+                LogError(
+                    "Persistent Log: LogInterceptor failed to start. There are " +
+                    "no guarantees that it functions properly after this message. " +
+                    "If you encounter any related issues please restart Unity.");
             }
         }
 
         public static void Stop(string packageName) {
-            _persistentState?.Packages.Remove(packageName);
-            SavePersistentState();
-            Unsubscribe(condition: !IsProcessingPackages);
+            try {
+                _persistentState?.Packages.Remove(packageName);
+                SavePersistentState();
+                Unsubscribe(condition: !IsProcessingPackages);
+            } catch (Exception e) {
+                LogException(e);
+
+                LogError(
+                    "Persistent Log: LogInterceptor failed to stop. There are " +
+                    "no guarantees that it functions properly after this message. " +
+                    "If you encounter any related issues please restart Unity.");
+            }
         }
 
         static async void OnLogMessageReceivedThreaded(string condition, string stackTrace, LogType type) {
